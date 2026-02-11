@@ -1,11 +1,7 @@
+import Login from "./auth/Login";
+
 function App() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white">
-      <h1 className="text-3xl font-bold">
-        Daily Puzzle Game 🚀
-      </h1>
-    </div>
-  );
+  return <Login />;
 }
 
 export default App;
