@@ -16,13 +16,17 @@ export default async function handler(
     return res.status(405).json({ message: "Method not allowed" });
   }
 
-  const { email, score } = req.body;
-
-  if (!email || score === undefined) {
-    return res.status(400).json({ message: "Missing email or score" });
-  }
-
   try {
+    const { email, score } = req.body;
+
+    // 🔎 Debug check
+    if (!email || score === undefined) {
+      return res.status(400).json({
+        message: "Missing email or score",
+        received: req.body,
+      });
+    }
+
     await pool.query(
       "INSERT INTO scores (user_email, score) VALUES ($1, $2)",
       [email, score]
@@ -30,7 +34,7 @@ export default async function handler(
 
     return res.status(200).json({ message: "Score saved successfully" });
   } catch (error) {
-    console.error("DB ERROR:", error);
-    return res.status(500).json({ message: "Database error" });
+    console.error("Save Score Error:", error);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 }
