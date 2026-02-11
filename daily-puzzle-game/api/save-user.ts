@@ -16,36 +16,21 @@ export default async function handler(
     return res.status(405).json({ message: "Method not allowed" });
   }
 
-  const { name, email } = req.body;
+  const { email, score } = req.body;
 
-  if (!email) {
-    return res.status(400).json({ message: "Email is required" });
+  if (!email || score === undefined) {
+    return res.status(400).json({ message: "Missing email or score" });
   }
 
   try {
     await pool.query(
-      `
-      CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        name TEXT,
-        email TEXT UNIQUE NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-      `
+      "INSERT INTO scores (user_email, score) VALUES ($1, $2)",
+      [email, score]
     );
 
-    await pool.query(
-      `
-      INSERT INTO users (name, email)
-      VALUES ($1, $2)
-      ON CONFLICT (email) DO NOTHING
-      `,
-      [name, email]
-    );
-
-    return res.status(200).json({ message: "User saved successfully" });
+    return res.status(200).json({ message: "Score saved successfully" });
   } catch (error) {
-    console.error("Database error:", error);
-    return res.status(500).json({ message: "Internal server error" });
+    console.error("DB ERROR:", error);
+    return res.status(500).json({ message: "Database error" });
   }
 }
