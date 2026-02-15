@@ -3,8 +3,10 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import type { User } from "firebase/auth";
 import { auth } from "./auth/firebase";
 import Login from "./auth/Login";
-import Puzzle from "./game/Puzzle";
 import Heatmap from "./game/Heatmap";
+import Dashboard from "./game/Dashboard";
+import ErrorBoundary from "./components/ErrorBoundary";
+
 
 function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -66,7 +68,9 @@ function App() {
       </button>
 
       {/* 🎯 Puzzle */}
-      <Puzzle />
+      <ErrorBoundary>
+        <Dashboard />
+      </ErrorBoundary>
 
       {/* 🎁 Badges */}
       {badges.length > 0 && (
