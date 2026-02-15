@@ -1,126 +1,91 @@
 import { useEffect, useState } from "react";
-import { getTodayPuzzle } from "./puzzles";
-import { updateStreak, getStreak } from "./streak";
-import type { User } from "firebase/auth";
+import { updateStreak } from "./streak";
+import { unlockBadge } from "./badges";
 
-type Props = {
-  user: User;
-};
-
-export default function Puzzle({ user }: Props) {
-  const [answer, setAnswer] = useState("");
+export default function Puzzle() {
   const [completed, setCompleted] = useState(false);
-  const [timer, setTimer] = useState(0);
-  const [started, setStarted] = useState(false);
+  const [showCongrats, setShowCongrats] = useState(false);
   const [streak, setStreak] = useState(0);
-  const [saving, setSaving] = useState(false);
 
-  const puzzle = getTodayPuzzle();
+  const today = new Date().toISOString().slice(0, 10);
 
-  // 🔁 Restore progress (offline)
+  // 🔥 Load completion state (offline first)
   useEffect(() => {
-    const today = new Date().toISOString().slice(0, 10);
-    const progress = localStorage.getItem("progress-" + today);
+    const progress = JSON.parse(localStorage.getItem("activity") || "{}");
 
-    if (progress) {
+    if (progress[today]) {
       setCompleted(true);
     }
 
-    setStreak(getStreak());
+    const savedStreak = Number(localStorage.getItem("streak") || 0);
+    setStreak(savedStreak);
   }, []);
 
-  // ⏱ Timer
-  useEffect(() => {
-    if (!started || completed) return;
+  // 🎯 Demo puzzle solver (temporary)
+  const solvePuzzle = () => {
+    if (completed) return;
 
-    const interval = setInterval(() => {
-      setTimer((t) => t + 1);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [started, completed]);
-
-  // 🎯 Validate puzzle
-  const handleSubmit = async () => {
-    if (answer.trim() !== puzzle.answer) {
-      alert("Wrong answer ❌");
-      return;
-    }
-
-    const today = new Date().toISOString().slice(0, 10);
-
-    // Save progress
-    localStorage.setItem("progress-" + today, "done");
-
-    // 🔥 Update heatmap
+    // Mark completed locally
     const activity = JSON.parse(localStorage.getItem("activity") || "{}");
-    activity[today] = true;
+    activity[today] = 4; // intensity level
     localStorage.setItem("activity", JSON.stringify(activity));
+
+    setCompleted(true);
 
     // 🔥 Update streak
     const newStreak = updateStreak();
     setStreak(newStreak);
 
-    setCompleted(true);
+    // 🎁 Unlock badge
+    unlockBadge(newStreak);
 
-    // 🌐 Backend sync
-    try {
-      setSaving(true);
-
-      await fetch("/api/save-score", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: user.email,
-          score: 100 - timer,
-        }),
-      });
-
-    } catch (err) {
-      console.log("Offline sync later");
-    } finally {
-      setSaving(false);
-    }
+    // 🎉 Show popup
+    setShowCongrats(true);
   };
 
   return (
-    <div className="bg-slate-800 p-5 rounded-xl mt-6 text-left">
+    <div className="bg-slate-800 p-6 rounded-xl shadow-lg max-w-xl w-full">
+      <h2 className="text-xl font-bold mb-4">🧩 Daily Puzzle</h2>
 
-      <h2 className="text-xl font-bold mb-2">🧩 Daily Puzzle</h2>
-
-      {completed ? (
-        <div className="space-y-2">
-          <p className="text-green-400">Completed ✅</p>
-          <p>🔥 Streak: {streak}</p>
-        </div>
-      ) : (
+      {!completed ? (
         <>
-          <p className="mb-2">{puzzle.question}</p>
-
-          <input
-            className="w-full p-2 rounded text-black"
-            value={answer}
-            onChange={(e) => {
-              setAnswer(e.target.value);
-              if (!started) setStarted(true);
-            }}
-          />
-
-          <p className="text-sm mt-2">⏱ Time: {timer}s</p>
+          <p className="text-gray-300 mb-4">
+            Demo puzzle: Click solve to complete today’s challenge.
+          </p>
 
           <button
-            onClick={handleSubmit}
-            className="mt-3 px-4 py-2 bg-green-500 text-black rounded"
+            onClick={solvePuzzle}
+            className="px-4 py-2 bg-green-500 text-black rounded-lg"
           >
-            Submit
+            Solve Puzzle
           </button>
-
-          {saving && (
-            <p className="text-xs text-gray-400 mt-1">
-              Syncing...
-            </p>
-          )}
         </>
+      ) : (
+        <div>
+          <p className="text-green-400 font-semibold">Completed ✅</p>
+          <p className="mt-2">🔥 Streak: {streak}</p>
+        </div>
+      )}
+
+      {/* 🎉 Congratulations popup */}
+      {showCongrats && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+          <div className="bg-slate-900 p-8 rounded-xl text-center shadow-xl">
+            <h2 className="text-2xl font-bold text-green-400 mb-2">
+              🎉 Congratulations!
+            </h2>
+            <p className="text-gray-300">
+              You solved today’s Daily Puzzle.
+            </p>
+
+            <button
+              onClick={() => setShowCongrats(false)}
+              className="mt-4 px-5 py-2 bg-green-500 text-black rounded-lg"
+            >
+              Continue
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

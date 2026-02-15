@@ -10,36 +10,27 @@ function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // 🔐 Auth listener
+  // 🔐 Auth state
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
+    const unsubscribe = onAuthStateChanged(auth, (u) => {
+      setUser(u);
       setLoading(false);
     });
-
     return () => unsubscribe();
   }, []);
 
-  // 💾 Save user to Neon
+  // 💾 Save user in DB
   useEffect(() => {
-    const saveUser = async () => {
-      if (!user) return;
+    if (!user) return;
 
-      try {
-        await fetch("/api/save-user", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: user.displayName,
-            email: user.email,
-          }),
-        });
-      } catch (err) {
-        console.error("User Save Error:", err);
-      }
-    };
-
-    saveUser();
+    fetch("/api/save-user", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: user.displayName,
+        email: user.email,
+      }),
+    }).catch(console.error);
   }, [user]);
 
   const handleLogout = async () => {
@@ -56,29 +47,46 @@ function App() {
 
   if (!user) return <Login />;
 
+  // 🎁 Badge display
+  const badges = JSON.parse(localStorage.getItem("badges") || "[]");
+
   return (
-    <div className="min-h-screen bg-slate-900 text-white flex flex-col items-center py-10 px-4">
-      <div className="max-w-lg w-full space-y-6 text-center">
+    <div className="min-h-screen bg-slate-900 text-white flex flex-col items-center p-6">
+      <h1 className="text-3xl font-bold">
+        Welcome, {user.displayName}
+      </h1>
 
-        <h1 className="text-3xl font-bold">
-          Welcome, {user.displayName}
-        </h1>
+      <p className="text-gray-400 mb-4">{user.email}</p>
 
-        <p>{user.email}</p>
+      <button
+        onClick={handleLogout}
+        className="mb-6 px-5 py-2 bg-red-500 rounded-lg"
+      >
+        Logout
+      </button>
 
-        <button
-          onClick={handleLogout}
-          className="px-5 py-2 bg-red-500 rounded-lg hover:bg-red-600"
-        >
-          Logout
-        </button>
+      {/* 🎯 Puzzle */}
+      <Puzzle />
 
-        {/* 🎮 Daily Puzzle */}
-        <Puzzle user={user} />
+      {/* 🎁 Badges */}
+      {badges.length > 0 && (
+        <div className="mt-4 flex gap-2">
+          {badges.includes("first") && (
+            <span className="px-3 py-1 bg-yellow-500 text-black rounded-full">
+              🏆 First Win
+            </span>
+          )}
+          {badges.includes("weekly") && (
+            <span className="px-3 py-1 bg-purple-500 rounded-full">
+              🔥 7 Day Streak
+            </span>
+          )}
+        </div>
+      )}
 
-        {/* 📊 Heatmap */}
+      {/* 🔥 Heatmap */}
+      <div className="mt-8 w-full max-w-4xl">
         <Heatmap />
-
       </div>
     </div>
   );
