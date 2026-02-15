@@ -3,9 +3,7 @@ import { Pool } from "pg";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false,
-  },
+  ssl: { rejectUnauthorized: false },
 });
 
 export default async function handler(
@@ -16,25 +14,23 @@ export default async function handler(
     return res.status(405).json({ message: "Method not allowed" });
   }
 
+  const { name, email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ message: "Email required" });
+  }
+
   try {
-    const { email, score } = req.body;
-
-    // 🔎 Debug check
-    if (!email || score === undefined) {
-      return res.status(400).json({
-        message: "Missing email or score",
-        received: req.body,
-      });
-    }
-
     await pool.query(
-      "INSERT INTO scores (user_email, score) VALUES ($1, $2)",
-      [email, score]
+      `INSERT INTO users (name, email)
+       VALUES ($1, $2)
+       ON CONFLICT (email) DO NOTHING`,
+      [name, email]
     );
 
-    return res.status(200).json({ message: "Score saved successfully" });
+    res.status(200).json({ message: "User saved" });
   } catch (error) {
-    console.error("Save Score Error:", error);
-    return res.status(500).json({ message: "Internal Server Error" });
+    console.error("User save error:", error);
+    res.status(500).json({ message: "Database error" });
   }
 }
