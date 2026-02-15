@@ -1,9 +1,16 @@
 import React from "react";
 
-type State = { hasError: boolean; error?: Error };
+type Props = {
+  children: React.ReactNode;
+};
 
-export default class ErrorBoundary extends React.Component<React.PropsWithChildren<{}>, State> {
-  constructor(props: {}) {
+type State = {
+  hasError: boolean;
+  error?: Error;
+};
+
+export default class ErrorBoundary extends React.Component<Props, State> {
+  constructor(props: Props) {
     super(props);
     this.state = { hasError: false };
   }
@@ -13,7 +20,6 @@ export default class ErrorBoundary extends React.Component<React.PropsWithChildr
   }
 
   componentDidCatch(error: Error, info: any) {
-    // log to console for now
     console.error("ErrorBoundary caught:", error, info);
   }
 
@@ -23,13 +29,17 @@ export default class ErrorBoundary extends React.Component<React.PropsWithChildr
         <div className="min-h-screen flex items-center justify-center p-6">
           <div className="bg-red-900/60 text-white p-6 rounded-lg max-w-xl">
             <h2 className="text-xl font-bold mb-2">Something went wrong</h2>
-            <p className="text-sm mb-4">An error occurred while rendering this section. Check the console for details.</p>
-            <pre className="text-xs whitespace-pre-wrap">{String(this.state.error)}</pre>
+            <p className="text-sm mb-4">
+              An error occurred while rendering this section.
+            </p>
+            <pre className="text-xs whitespace-pre-wrap">
+              {String(this.state.error)}
+            </pre>
           </div>
         </div>
       );
     }
 
-    return this.props.children as React.ReactElement;
+    return this.props.children;
   }
 }
